@@ -1,0 +1,335 @@
+---
+title: "Tidy Tuesday - 2021 Week 13 - UN Votes"
+author: "Nelson Pray"
+date: "26/03/2021"
+output: html_document
+---
+
+```{r initialise, echo=FALSE, message=FALSE, warning=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, fig.width = 12, fig.height = 7.4, dpi = 320)
+
+# To show colours inline
+# code from https://www.garrickadenbuie.com/blog/little-inline-color-boxes/
+
+color_preview <- function(color) {
+  htmltools::tagList(
+    htmltools::span(
+      class = "color-preview",
+      style = paste("background-color:", color),
+      .noWS = "outside"
+    ),
+    htmltools::code(color, .noWS = "outside"),
+    color_preview_dep()
+  )
+}
+
+color_preview_dep <- function() {
+  htmltools::htmlDependency(
+    name = "color_preview",
+    version = "0.0.1",
+    src = ".",
+    all_files = FALSE,
+    head = "
+<style>.color-preview {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  
+  margin: 0 0.5em;
+  vertical-align: middle;
+  transition: transform 100ms ease-in-out;
+}
+
+.color-preview:hover {
+  cursor: pointer;
+  transform: scale(2);
+  transform-origin: 50% 50%;
+}</style>"
+  )
+}
+```
+
+
+## Introduction
+
+It has been a very long time since I worked on a [Tidy Tuesday](https://github.com/rfordatascience/tidytuesday) dataset and decided to give it ago for two reasons:
+
+ - To procrastinate on doing uni work while still feel like I am doing productive work
+ - To have something that I can show for my procrastination and use to show my data viz skills
+ 
+This week's data is about how the UN nations have voted throughout its history. It was provided by the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=hdl:1902.1/12379). More info can be found [here](http://www.citizen-statistician.org/2021/03/open-source-contribution-as-a-student-project/). After seeing the example plot I knew I wanted to compare the US, Russia, and China.
+
+Knowing that I was working with UN data I decided I wanted to use the official font that the UN uses so I did a quick google search and found out that they use Roboto according to the [style guide](https://www.un.org/styleguide/). From there I also knew I wanted to choose colours that corresponded to the countries I chose so I found official country colours on [wikipedia](https://en.wikipedia.org/wiki/National_colours) knowing there would be overlap since so many countries use the same colours I looked at secondary colours as well on wikipedia and came up with:
+
+- China: `r color_preview("#FFD700")`
+- Russia: `r color_preview("#0000CC")`
+- the US: `r color_preview("#FF0000")`
+
+I wasn't happy with how the colours looked due to their brightness so I experimented with them a bit and ended up with the following colours:
+
+- China: `r color_preview("#ffd700")`
+- Russia: `r color_preview("#000080")`
+- the US: `r color_preview("#980000")`
+
+## Setup
+
+The setup is pretty standard for an R project consists of importing the libraries, loading the additional fonts, and creating a custom colour vector.
+
+```{r setup, message=FALSE, warning=FALSE}
+# Import libraries
+
+library(tidyverse) 
+library(lubridate)
+library(unvotes)
+library(ggtext)         # to edit the text in ggplot2
+library(scales)         # to change the scales
+library(extrafont)      # custom fonts
+
+# load additional fonts
+loadfonts()
+
+# custom colours
+cols <- c("#ffd700", "#000080", "#980000")
+```
+
+
+## The Data
+
+I decided to use the [{unvotes}](https://github.com/dgrtwo/unvotes) package as the data was already precleaned. Following the example on the page I combined the datasets into a single dataframe:
+
+```{r data}
+# Combine datasets into one dataframe
+
+df <- un_votes %>% 
+  inner_join(un_roll_calls, by = "rcid") %>% 
+  inner_join(un_roll_call_issues, by = "rcid")
+```
+
+From there I used glimpse to get an idea of what data I was working with and created a vector of countries I wanted to plot:
+
+```{r}
+glimpse(df)
+
+# select countries
+countries <- c("United States", "Russia", "China")
+```
+
+From there I created a modified dataframe to contain just the selected countries and the data needed for the plot. Again I used the {unvotes} page as a guideline for this:
+
+```{r modified_data}
+
+df_modified <- df %>% 
+  filter(country %in% countries) %>% 
+  group_by(year = year(date), country, issue) %>% 
+  summarise(votes = n(),
+            percent_yes = mean(vote == "yes"))
+
+```
+
+## The Plotting Process
+
+After getting the data the way I wanted I started the plotting process. Knowing what I wanted roughly from the beginning helped a lot to lay the foundation of the plot:
+
+```{r initial_plot, message=FALSE}
+ggplot(df_modified, aes(year, percent_yes, colour = country)) +
+  geom_smooth(method = "loess",
+              se = FALSE,
+              show.legend = FALSE) +
+  facet_wrap(~issue) +
+  theme_minimal() +
+  labs(title = "How China, Russia and the US voted",
+       subtitle = "UN Resolutions from 1947 to 2019",
+       y = "Percentage of Yes Votes (%)",
+       x = "Year") +
+  scale_colour_manual(values = cols) 
+```
+There were a few things I didn't like about this plot:
+
+ - Not using the right font
+ - No legend / explanation of the colours
+ - Didn't like the size of the lines
+ 
+For my next attempt, I added used the correct font, added the colours, and adjusted the line size:
+
+```{r message=FALSE}
+ggplot(df_modified, aes(year, percent_yes, colour = country)) +
+  geom_smooth(method = "loess",
+              size = 1.3, 
+              se = FALSE,
+              show.legend = FALSE) +
+  facet_wrap(~issue) +
+  theme_minimal() +
+  # this uses ggtext to change the colours in the title
+  # must use element_markdown in theme()
+  labs(title = "How <span style = 'color:#ffd700;'>China</span>, 
+       <span style = 'color:#000080;'>Russia</span>, and the <span style = 'color:#980000;'>US</span> voted",
+       subtitle = "UN Resolutions from 1947 to 2019",
+       y = "Percentage of Yes Votes (%)",
+       x = "Year") +
+  theme(plot.title = element_markdown(family = "Roboto", size = 24, face = "bold"),
+        plot.subtitle = element_markdown(family = "Roboto", size = 20),
+        plot.margin = margin(20, 20, 20, 20),
+        text = element_text(family = "Roboto", size = 14),
+        strip.text = element_text(face = "bold")) +
+  scale_colour_manual(values = cols)
+```
+
+This was a major improvement over the initial plot but I still find like it was incomplete. After looking at it for awhile I realised that the plot showed an oversimplified idea of voting trends and actual hid a lot of the important information about the votes, so I added a geom_point() in order to show how the vote percentages actually occurred as well. In addition to that I noticed that I didn't reference where the data was coming from so I added a caption as well.
+
+```{r message=FALSE}
+ggplot(df_modified, aes(year, percent_yes, colour = country, fill = country)) +
+  geom_smooth(method = "loess",
+              size = 1.3, 
+              se = FALSE,
+              show.legend = FALSE) +
+  geom_point(alpha = 0.5, show.legend = FALSE) +
+  facet_wrap(~issue) +
+  theme_minimal() +
+  labs(title = "How <span style = 'color:#ffd700;'>China</span>, 
+       <span style = 'color:#000080;'>Russia</span>, and the <span style = 'color:#980000;'>US</span> voted",
+       subtitle = "UN Resolutions from 1947 to 2019",
+       y = "Percentage of Yes Votes (%)",
+       x = "Year",
+       caption = "Data from the {unvotes} package") +
+  theme(plot.title = element_markdown(family = "Roboto", size = 24, face = "bold"),
+        plot.subtitle = element_markdown(family = "Roboto", size = 20),
+        plot.margin = margin(20, 20, 20, 20),
+        plot.caption = element_markdown(colour = "#777777"),
+        text = element_text(family = "Roboto", size = 14),
+        strip.text = element_text(face = "bold")) +
+  scale_colour_manual(values = cols) +
+  scale_fill_manual(values = cols)
+```
+
+I was very happy with this plot and was about to call it finished when I noticed a couple things stood out to me:
+
+ - The y-axis said it was percentage but was in decimal form
+ - The capitalisation of the different issues didn't look right with only have the first word capitalised
+ - The fact the issues weren't in alphabetical order
+ 
+To fix the y-axis would be straight forward but fixing the capitalisation and order of the issues was more effort and involved me going back to the modified data which needed to be recoded and releveled. There is probably a more efficient way of doing it but I wasn't sure how so this is what I ended up with:
+
+```{r message=FALSE}
+df_modified <- df %>% 
+  filter(country %in% countries) %>% 
+  group_by(year = year(date), country, issue) %>% 
+  mutate(issue = recode(issue, 
+                        "Colonialsim" = "Colonialism",
+                        "Arms control and disarmament" = "Arms Control and Disarmament",
+                        "Economic development" = "Economic Development",
+                        "Human rights" = "Human Rights",
+                        "Palestinian conflict" = "Palenstinian Conflict",
+                        "Nuclear weapons and nuclear material" = "Nuclear Weapons and Nuclear Material"
+                        ),
+         issue = ordered(issue, c("Arms Control and Disarmament", "Colonialism", "Economic Development",
+                                  "Human Rights", "Nuclear Weapons and Nuclear Material", "Palenstinian Conflict"))) %>% 
+  summarise(votes = n(),
+            percent_yes = mean(vote == "yes"))
+```
+
+After getting the data sorted again it was time to finalise the plot:
+
+```{r message=FALSE}
+ggplot(df_modified, aes(year, percent_yes, colour = country, fill = country)) +
+  geom_smooth(method = "loess",
+              size = 1.3, 
+              se = FALSE,
+              show.legend = FALSE) +
+  geom_point(alpha = 0.5, show.legend = FALSE) +
+  facet_wrap(~issue) +
+  theme_minimal() +
+  labs(title = "How <span style = 'color:#ffd700;'>China</span>, 
+       <span style = 'color:#000080;'>Russia</span>, and the <span style = 'color:#980000;'>US</span> voted",
+       subtitle = "UN Resolutions from 1947 to 2019",
+       y = "Percentage of Yes Votes (%)",
+       x = "Year",
+       caption = "Data from the {unvotes} package") +
+  theme(plot.title = element_markdown(family = "Roboto", size = 24, face = "bold"),
+        plot.subtitle = element_markdown(family = "Roboto", size = 20),
+        plot.margin = margin(20, 20, 20, 20),
+        plot.caption = element_markdown(colour = "#777777"),
+        text = element_text(family = "Roboto", size = 14),
+        strip.text = element_text(face = "bold")) +
+  scale_colour_manual(values = cols) +
+  scale_fill_manual(values = cols) +
+  scale_y_continuous(labels = label_percent(suffix = NULL))
+```
+
+The final plot was essentially how I envisioned it from the beginning. I am very happy how it turned out.
+
+## Conclusion and Further Thoughts
+
+Overall, it was nice to take some time and create data visualisations again. This was a great dataset to get back into Tidy Tuesday. If I had more time, I would want to experiment with unsupervised learning (clustering) to determine if there are reliable voting blocs of nations that almost always vote together. After posting my plot to [twitter](https://twitter.com/nelsonpray/status/1375340950961094659) I saw [@jdavison_](https://twitter.com/JDavison_) had did an [analysis](https://twitter.com/JDavison_/status/1374371809475260419) of European countries using network analysis to find voting blocs which is awesome and deserves a look
+
+## Finalised Code
+
+```{r final_code, eval=FALSE}
+library(tidyverse)
+library(lubridate)
+library(unvotes)
+library(ggtext)         # used for customise ggplot text
+library(scales)         # used for different scales for plots
+library(extrafont)      # used for additional fonts
+
+loadfonts()             # loads additional fonts from system
+
+# custom colours
+cols <- c("#ffd700", "#000080", "#980000")
+
+# combine datasets into single dataframe
+df <- un_votes %>% 
+  inner_join(un_roll_calls, by = "rcid") %>% 
+  inner_join(un_roll_call_issues, by = "rcid")
+
+# selected countries
+countries <- c("United States", "Russia", "China")
+
+# modified data frame with recoding to change the capitalisation of the issues
+# and releveling to change the order
+
+df_modified <- df %>% 
+  filter(country %in% countries) %>% 
+  group_by(year = year(date), country, issue) %>% 
+  mutate(issue = recode(issue, 
+                        "Colonialsim" = "Colonialism",
+                        "Arms control and disarmament" = "Arms Control and Disarmament",
+                        "Economic development" = "Economic Development",
+                        "Human rights" = "Human Rights",
+                        "Palestinian conflict" = "Palenstinian Conflict",
+                        "Nuclear weapons and nuclear material" = "Nuclear Weapons and Nuclear Material"
+                        ),
+         issue = ordered(issue, c("Arms Control and Disarmament", "Colonialism", "Economic Development",
+                                  "Human Rights", "Nuclear Weapons and Nuclear Material", "Palenstinian Conflict"))) %>% 
+  summarise(votes = n(),
+            percent_yes = mean(vote == "yes"))
+
+# Finalised plot with customised title colours using {ggtext} 
+# and custom fonts using {extrafont} and a percentage scale using {scales}
+
+ggplot(df_modified, aes(year, percent_yes, colour = country, fill = country)) +
+  geom_smooth(method = "loess",
+              size = 1.3, 
+              se = FALSE,
+              show.legend = FALSE) +
+  geom_point(alpha = 0.5, show.legend = FALSE) +
+  facet_wrap(~issue) +
+  theme_minimal() +
+  labs(title = "How <span style = 'color:#ffd700;'>China</span>, 
+       <span style = 'color:#000080;'>Russia</span>, and the <span style = 'color:#980000;'>US</span> voted",
+       subtitle = "UN Resolutions from 1947 to 2019",
+       y = "Percentage of Yes Votes (%)",
+       x = "Year",
+       caption = "Data from the {unvotes} package") +
+  theme(plot.title = element_markdown(family = "Roboto", size = 24, face = "bold"),
+        plot.subtitle = element_markdown(family = "Roboto", size = 20),
+        plot.margin = margin(20, 20, 20, 20),
+        plot.caption = element_markdown(colour = "#777777"),
+        text = element_text(family = "Roboto", size = 14),
+        strip.text = element_text(face = "bold")) +
+  scale_colour_manual(values = cols) +
+  scale_fill_manual(values = cols) +
+  scale_y_continuous(labels = label_percent(suffix = NULL))
+
+```
+
