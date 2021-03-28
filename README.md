@@ -1,6 +1,6 @@
 # TidyTuesday
 
-[Tidy Tuesday](https://github.com/rfordatascience/tidytuesday) is a project from the R4DS Online Learning Community that focuses on the use of the `{tidyverse}` packages to explore data through visualisations and other forms.
+[Tidy Tuesday](https://github.com/rfordatascience/tidytuesday) is a project from the R4DS Online Learning Community that focuses on the use of the [{tidyverse}](https://www.tidyverse.org/) packages to explore data through visualisations and other forms. A lot of great examples can be found on twitter using the [#TidyTuesday](https://twitter.com/search?q=%23TidyTuesday) hashtag.
 
 Below is a collection of the different data sets I have explored and visualisations I have created
 
