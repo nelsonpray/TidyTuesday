@@ -6,7 +6,6 @@ Below is a collection of the different data sets I have explored and visualisati
 
 <details>
   <summary>Experiments in chronological order (click to expand)</summary>
-  ## 2021
   * **2021**
    - [Week 13](https://github.com/nelsonpray/TidyTuesday/tree/main/2021/week_13_unvotes) UN Votes 🗳️
  </details>
