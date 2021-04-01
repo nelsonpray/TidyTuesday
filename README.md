@@ -9,7 +9,11 @@ Below is a collection of the different data sets I have explored and visualisati
   
   * **2021**
     - [Week 13](https://github.com/nelsonpray/TidyTuesday/tree/main/2021/week_13_unvotes) UN Votes 🗳️
+    - [Week 14](https://github.com/nelsonpray/TidyTuesday/tree/main/2021/week_14_makeup_shades) Makeup Shades 💄
  </details>
+
+### [2021 / Week 14](https://github.com/nelsonpray/TidyTuesday/tree/main/2021/week_14_makeup_shades) Makeup Shades 💄
+![./images/tidy-tuesday.png](https://raw.githubusercontent.com/nelsonpray/TidyTuesday/main/2021/week_14_makeup_shades/images/tidy-tuesday.png)
 
 ### [2021 / Week 13](https://github.com/nelsonpray/TidyTuesday/tree/main/2021/week_13_unvotes) UN Votes 🗳️
 ![./images/2021_week_13_final.png](https://raw.githubusercontent.com/nelsonpray/TidyTuesday/main/2021/week_13_unvotes/images/2021_week_13_final.png)
